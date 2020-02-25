@@ -1,27 +1,26 @@
+
+import java.awt.*;
+
 import java.io.FileInputStream;
-import java.io.FileNotFoundException; 
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableListValue;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
+import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.ComboBox;
-import javafx.scene.image.*;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.scene.control.Button;
-import javafx.scene.control.Slider;
-import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.image.*;
 import javafx.scene.layout.GridPane;
-import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
+
 import java.io.*;
-import java.nio.IntBuffer;
 
 import static java.lang.Integer.max;
 
@@ -31,26 +30,113 @@ import static java.lang.Integer.max;
 // I won't give extra marks for that though.
 
 public class Example extends Application {
-    short cthead[][][]; //store the 3D volume data set (z x y)
-    short min, max; //min/max value in the 3D volume data set
-    private int top = 0; //Global variables to take in the value of the slice
-    private int side = 0;
-    private int front = 0;
-    int width = 256;
-    int height = 256;
+    public static short cthead[][][]; //store the 3D volume data set (z x y)
+    public static short min, max; //min/max value in the 3D volume data set
+    public static int top = 0; //Global variables to take in the value of the slice
+    public static int side = 0;
+    public static int front = 0;
+    public static int width = 256;
+    public static int height = 256;
+    public static boolean dim = false;
+    public static boolean versionControl = false;
 
+    public static WritableImage[] thumbNail = new WritableImage[629];
 
-    WritableImage medical_image = new WritableImage(width, height);
+    public static WritableImage medical_image = new WritableImage(width, height);
+
+    public static GridPane root2 = new GridPane();
 
     ImageView displayImg = new ImageView(medical_image);
 
 
+
     @Override
-    public void start(Stage stage) throws FileNotFoundException, IOException {
-        stage.setTitle("CThead Viewer");
-        GridPane root = new GridPane();
+    public void start(Stage stage) throws IOException {
+
+        Axis axis = new Axis();
+        imageResizing imageResize = new imageResizing();
+        thumbNails thumb = new thumbNails();
 
         ReadData();
+        thumb.viewThumbnails();
+
+
+        MIP mip = new MIP();
+        Stage thumbNailStage = new Stage();
+
+        GridPane root = new GridPane();
+
+        root2.setGridLinesVisible(true);
+
+
+// get the mouse's position
+
+
+        GridPane thumbnailLarge = new GridPane();
+        Button backBtn = new Button("Back to ThumbNails");
+        Button backBtn2 = new Button("Back to Main");
+        thumbnailLarge.add(backBtn,2,2,1,1);
+        thumbnailLarge.add(backBtn2,3,2,1,1);
+        ScrollPane sc = new ScrollPane(root2);
+        stage.setX(0);
+        stage.setY(0);
+
+        Scene scene1 = new Scene(root, 1440, 1550);
+        Scene scene2 = new Scene(sc, 1440, 1550);
+        Scene scene3 = new Scene(thumbnailLarge,1440,1550);
+        stage.setResizable(false);
+        stage.setTitle("CThead Viewer");
+
+
+
+
+
+        root2.setOnMouseClicked(e ->{
+
+            //System.out.println(e.getX());
+            int cX = (int)Math.floor(e.getX() / 90);
+            int cY = (int)Math.floor(e.getY() / 90);
+            System.out.println(cY);
+            System.out.println(cX);
+
+            int cZ = ((cY *16) + cX);
+            //System.out.println(cZ);
+
+            if(e.getY() < root2.getHeight()){
+                if(e.getY() > root2.getHeight() - 90 && e.getX() < 360) {
+                    if (cZ < 256) {
+                        side = cZ;
+                        ImageView image = new ImageView(imageResize.bilinearInterpolation(Axis.sideAxis(), 500, 500));
+                        thumbnailLarge.add(image, 2, 0, 2, 1);
+                    } else if (cZ < 512) {
+                        front = cZ - 256;
+                        ImageView image = new ImageView(imageResize.bilinearInterpolation(Axis.frontAxis(), 500, 500));
+                        thumbnailLarge.add(image, 2, 0, 2, 1);
+                    } else if (cZ < 624) {
+                        top = cZ - 512;
+                        ImageView image = new ImageView(imageResize.bilinearInterpolation(Axis.frontAxis(), 500, 500));
+                        thumbnailLarge.add(image, 2, 0, 2, 1);
+                    } else if (cZ == 625) {
+                        ImageView image1 = new ImageView(imageResize.bilinearInterpolation(mip.MIPSide(), 500, 500));
+
+                        thumbnailLarge.add(image1, 2, 0, 2, 1);
+
+                    } else if (cZ == 626) {
+                        ImageView image = new ImageView(imageResize.bilinearInterpolation(mip.MIPFront(), 500, 500));
+                        thumbnailLarge.add(image, 2, 0, 2, 1);
+                    } else {
+                        ImageView image = new ImageView(imageResize.bilinearInterpolation(mip.MIPTop(), 500, 500));
+                        thumbnailLarge.add(image, 2, 0, 2, 1);
+                    }
+                    thumbNailStage.setScene(scene3);
+
+                }
+
+                //System.out.println(cY);
+
+            }
+        });
+
 
 
 
@@ -59,9 +145,10 @@ public class Example extends Application {
                         "Bilinear Interpolation",
                         "Nearest Neighbour"
                 );
+        Button closeBtn = new Button("Return to Main Screen");
         ComboBox comboBox = new ComboBox(options);
         comboBox.setValue("Select Resizing Algorithm");
-
+        Button viewThumbNails = new Button("View ImageThumbnails");
         Button resetBtn = new Button("Reset");
         Button nearestNeighbour = new Button("Nearest Neighbour");
         Button mipTopbutton = new Button("MIP Top");
@@ -74,13 +161,9 @@ public class Example extends Application {
         Slider widthSlider = new Slider(1, 500, displayImg.getImage().getWidth());
         Slider heightSlider = new Slider(1, 500, displayImg.getImage().getHeight());
 
-        if (front != 0 || side != 0) {
-            widthSlider.setValue(displayImg.getImage().getWidth());
-            heightSlider.setValue(displayImg.getImage().getHeight() / 2);
-        } else {
-            widthSlider.setValue(displayImg.getImage().getWidth());
-            heightSlider.setValue(displayImg.getImage().getHeight());
-        }
+        closeBtn.setMaxWidth(180);
+        root2.add(closeBtn,7,66,2,2);
+
 
         Label widthLbl = new Label("Width");
         Label heightLbl = new Label("Height");
@@ -94,7 +177,7 @@ public class Example extends Application {
             }
             sideSlider.adjustValue(0);
             topSlider.adjustValue(0);
-            displayImg.setImage(frontAxis(medical_image));
+            displayImg.setImage(axis.frontAxis());
         });
 
         sideSlider.setOnMouseDragged(e -> {
@@ -104,7 +187,7 @@ public class Example extends Application {
 
             frontSlider.adjustValue(0);
             topSlider.adjustValue(0);
-            displayImg.setImage(sideAxis(medical_image));
+            displayImg.setImage(axis.sideAxis());
         });
 
 
@@ -115,16 +198,16 @@ public class Example extends Application {
 
             frontSlider.adjustValue(0);
             sideSlider.adjustValue(0);
-            displayImg.setImage(topAxis(medical_image));
+            displayImg.setImage(axis.topAxis());
         });
 
         widthSlider.setOnMouseDragged(e -> {
 
             if(comboBox.getValue().equals("Bilinear Interpolation")){
-                displayImg.setImage(bilinearInterpolation(medical_image, (int) widthSlider.getValue(), (int) heightSlider.getValue()));
+                displayImg.setImage(imageResize.bilinearInterpolation(medical_image, (int) widthSlider.getValue(), (int) heightSlider.getValue()));
                 System.out.println("Bilinear");
             }else{
-                displayImg.setImage(NearestNeighbour(medical_image, (int) widthSlider.getValue(), (int) heightSlider.getValue()));
+                displayImg.setImage(imageResize.NearestNeighbour(medical_image, (int) widthSlider.getValue(), (int) heightSlider.getValue()));
                 System.out.println("Nearest");
             }
 
@@ -135,10 +218,11 @@ public class Example extends Application {
 
 
             if(comboBox.getValue().equals("Bilinear Interpolation")){
-                displayImg.setImage(bilinearInterpolation(medical_image, (int) widthSlider.getValue(), (int) heightSlider.getValue()));
+
+                displayImg.setImage(imageResize.bilinearInterpolation(medical_image, (int) widthSlider.getValue(), (int) heightSlider.getValue()));
                 System.out.println("Bilinear");
             }else{
-                displayImg.setImage(NearestNeighbour(medical_image, (int) widthSlider.getValue(), (int) heightSlider.getValue()));
+                displayImg.setImage(imageResize.NearestNeighbour(medical_image, (int) widthSlider.getValue(), (int) heightSlider.getValue()));
                 System.out.println("Nearest");
             }
 
@@ -148,7 +232,7 @@ public class Example extends Application {
             @Override
             public void handle(ActionEvent event) {
                 clearImage(medical_image);
-                displayImg.setImage(MIPSide(medical_image));
+                displayImg.setImage(mip.MIPSide());
             }
         });
 
@@ -156,7 +240,7 @@ public class Example extends Application {
             @Override
             public void handle(ActionEvent event) {
                 clearImage(medical_image);
-                displayImg.setImage(MIPFront(medical_image));
+                displayImg.setImage(mip.MIPFront());
             }
         });
 
@@ -164,9 +248,17 @@ public class Example extends Application {
             @Override
             public void handle(ActionEvent event) {
                 clearImage(medical_image);
-                displayImg.setImage(MIPTop(medical_image));
+                displayImg.setImage(mip.MIPTop());
             }
         });
+
+        closeBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                stage.setScene(scene1);
+            }
+        });
+
 
         resetBtn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -176,10 +268,43 @@ public class Example extends Application {
             }
         });
 
+
+        viewThumbNails.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+
+
+
+                int k = 0;
+                for (int j = 0; j < 40;j++) {
+                    for (int i = 0; i < 16; i++) {
+                        ImageView image = new ImageView(thumbNail[k]);
+                        root2.add(image, i, j, 1, 1);
+                        if(k < 627){
+                            k++;
+                        }else{
+                            break;
+
+                        }
+                    }
+
+
+
+
+                }
+
+                thumbNailStage.setScene(scene2);
+                thumbNailStage.show();
+            }
+
+        });
+
+
+
         nearestNeighbour.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                bilinearInterpolation(medical_image, 200, 200);
+                imageResizing.bilinearInterpolation(medical_image, 200, 200);
 
             }
         });
@@ -217,6 +342,7 @@ public class Example extends Application {
 
 //https://examples.javacodegeeks.com/desktop-java/javafx/scene/image-scene/javafx-image-example/
 
+        root.add(viewThumbNails,2,7,1,1);
         root.add(comboBox,2,5,1,1);
         root.add(widthLbl, 0, 5, 1, 1);
         root.add(heightLbl, 0, 6, 1, 1);
@@ -238,10 +364,11 @@ public class Example extends Application {
         root.setHgap(10);
 
 
-        Scene scene = new Scene(root, 800, 480);
+
         // scene.getStylesheets().add("styleSheet.css");
-        stage.setScene(scene);
+        stage.setScene(scene1);
         stage.show();
+
     }
 
 
@@ -292,347 +419,12 @@ public class Example extends Application {
 	   the image carrying out the copying of a slice of data into the
 	   image.
    */
-    public WritableImage topAxis(WritableImage image) {
-        //Get image dimensions, and declare loop variables
-        int w = (int) image.getWidth(), h = (int) image.getHeight(), i, j, c, k;
-        PixelWriter image_writer = image.getPixelWriter();
-
-        float col;
-        short datum;
-        //Shows how to loop through each pixel and colour
-        //Try to always use j for loops in y, and i for loops in x
-        //as this makes the code more readable
-        for (j = 0; j < h; j++) {
-            for (i = 0; i < w; i++) {
-                //at this point (i,j) is a single pixel in the image
-                //here you would need to do something to (i,j) if the image size
-                //does not match the slice size (e.g. during an image resizing operation
-                //If you don't do this, your j,i could be outside the array bounds
-                //In the framework, the image is 256x256 and the data set slices are 256x256
-                //so I don't do anything - this also leaves you something to do for the assignment
-                datum = cthead[top][j][i]; //get values from slice 76 (change this in your assignment)
-                //calculate the colour by performing a mapping from [min,max] -> [0,255]
-                col = (((float) datum - (float) min) / ((float) (max - min)));
-                for (c = 0; c < 3; c++) {
-                    //and now we are looping through the bgr components of the pixel
-                    //set the colour component c of pixel (i,j)
-                    image_writer.setColor(i, j, Color.color(col, col, col, 1.0));
-                    //					data[c+3*i+3*j*w]=(byte) col;
-                } // colour loop
-            } // column loop
-        } // row loop
-        return image;
-    }
-
-    public WritableImage sideAxis(WritableImage image) {
-        //Get image dimensions, and declare loop variables
-        int dimension = (int) cthead.length, h = (int) image.getHeight(), i, j, c, k;
-        PixelWriter image_writer = image.getPixelWriter();
-
-        float col;
-        short datum;
-        //Shows how to loop through each pixel and colour
-        //Try to always use j for loops in y, and i for loops in x
-        //as this makes the code more readable
-        for (j = 0; j < h; j++) {
-            for (i = 0; i < dimension; i++) {
-                //at this point (i,j) is a single pixel in the image
-                //here you would need to do something to (i,j) if the image size
-                //does not match the slice size (e.g. during an image resizing operation
-                //If you don't do this, your j,i could be outside the array bounds
-                //In the framework, the image is 256x256 and the data set slices are 256x256
-                //so I don't do anything - this also leaves you something to do for the assignment
-                datum = cthead[i][j][side]; //get values from slice 76 (change this in your assignment)
-                //calculate the colour by performing a mapping from [min,max] -> [0,255]
-                col = (((float) datum - (float) min) / ((float) (max - min)));
-                for (c = 0; c < 3; c++) {
-                    //and now we are looping through the bgr components of the pixel
-                    //set the colour component c of pixel (i,j)
-                    image_writer.setColor(j, i, Color.color(col, col, col, 1.0));
-                    //					data[c+3*i+3*j*w]=(byte) col;
-                } // colour loop
-            } // column loop
-        } // row loop
-        return image;
-
-    }
-
-    public WritableImage frontAxis(WritableImage image) {
-        //Get image dimensions, and declare loop variables
-        int dimension = (int) cthead.length, h = (int) image.getHeight(), i, j, c, k;
-        PixelWriter image_writer = image.getPixelWriter();
-
-        float col;
-        short datum;
-        //Shows how to loop through each pixel and colour
-        //Try to always use j for loops in y, and i for loops in x
-        //as this makes the code more readable
-        for (j = 0; j < h; j++) {
-            for (i = 0; i < dimension; i++) {
-                //at this point (i,j) is a single pixel in the image
-                //here you would need to do something to (i,j) if the image size
-                //does not match the slice size (e.g. during an image resizing operation
-                //If you don't do this, your j,i could be outside the array bounds
-                //In the framework, the image is 256x256 and the data set slices are 256x256
-                //so I don't do anything - this also leaves you something to do for the assignment
-                datum = cthead[i][front][j]; //get values from slice 76 (change this in your assignment)
-                //calculate the colour by performing a mapping from [min,max] -> [0,255]
-                col = (((float) datum - (float) min) / ((float) (max - min)));
-                for (c = 0; c < 3; c++) {
-                    //and now we are looping through the bgr components of the pixel
-                    //set the colour component c of pixel (i,j)
-                    image_writer.setColor(j, i, Color.color(col, col, col, 1.0));
-                    //					data[c+3*i+3*j*w]=(byte) col;
-                } // colour loop
-            } // column loop
-        } // row loop
-        return image;
-    }
-
-    public WritableImage MIPSide(WritableImage image) {
-        PixelWriter image_writer = image.getPixelWriter();
-        int i, j, k, c;
-        short datum;
-        float col;
-        int dimension = cthead.length, h = (int) image.getHeight();
-
-        for (j = 0; j < h; j++) {
-            for (i = 0; i < dimension; i++) {
-                short maximum = 0;
-                for (k = 0; k < 255; k++) {
-                    datum = cthead[i][j][k];
-                    if (maximum < datum) {
-                        maximum = datum;
-                    }
-                    col = (((float) maximum - (float) min) / ((float) (max - min)));
-                    if (maximum == max(datum, maximum)) {
-                        for (c = 0; c < 3; c++) {
-                            image_writer.setColor(j, i, Color.color(col, col, col, 1.0));
-                        }
-                    }
-                }
-            }
-        }
-        return image;
-    }
-
-    public WritableImage MIPTop(WritableImage image) {
-        PixelWriter image_writer = image.getPixelWriter();
-        int i, j, k, c;
-        short datum;
-        float col;
-        int w = (int) image.getWidth(), h = (int) image.getHeight();
-
-        for (j = 0; j < h; j++) {
-            for (i = 0; i < w; i++) {
-                short maximum = 0;
-                for (k = 0; k < 112; k++) {
-                    datum = cthead[k][j][i];
-                    if (maximum < datum) {
-                        maximum = datum;
-                    }
-                    col = (((float) maximum - (float) min) / ((float) (max - min)));
-                    if (maximum == max(datum, maximum)) {
-                        for (c = 0; c < 3; c++) {
-                            image_writer.setColor(i, j, Color.color(col, col, col, 1.0));
-                        }
-                    }
-                }
-            }
-        }
-
-        return image;
-    }
-
-    public WritableImage MIPFront(WritableImage image) {
-        PixelWriter image_writer = image.getPixelWriter();
-        int i, j, k, c;
-        short datum;
-        float col;
-        int dimension = cthead.length, h = (int) image.getHeight();
-
-        for (j = 0; j < h; j++) {
-            for (i = 0; i < dimension; i++) {
-                short maximum = 0;
-                for (k = 0; k < 255; k++) {
-                    datum = cthead[i][k][j];
-                    if (maximum < datum) {
-                        maximum = datum;
-                    }
-                    col = (((float) maximum - (float) min) / ((float) (max - min)));
-                    if (maximum == max(datum, maximum)) {
-                        for (c = 0; c < 3; c++) {
-                            image_writer.setColor(j, i, Color.color(col, col, col, 1.0));
-                        }
-                    }
-                }
-            }
-        }
-        return image;
-
-    }
-
-    public WritableImage NearestNeighbour(WritableImage image, int newWidth, int newHeight) {
-        WritableImage newImage = new WritableImage(newWidth, newHeight);
-        PixelWriter image_writer = newImage.getPixelWriter();
-        PixelReader image_reader = image.getPixelReader();
-
-        int j, i, c;
-        float y, x;
-        int xA, yA;
-
-        if (front != 0 || side != 0) {
-            xA = (int) image.getWidth();
-            yA = (int) image.getHeight() / 2;
-        } else {
-            xA = (int) image.getWidth();
-            yA = (int) image.getHeight();
-        }
-
-        float xB = (float) newImage.getWidth();
-        float yB = (float) newImage.getHeight();
-
-
-        for (j = 0; j < yB - 1; j++) {
-            for (i = 0; i < xB - 1; i++) {
-                y = j * ((yA) / yB);
-                x = i * (xA / xB);
-                float col = (float) image_reader.getColor((int) x, (int) y).getRed();
-                for (c = 0; c < 3; c++) {
-                    image_writer.setColor(i, j, Color.color(col, col, col, 1.0));
-                }
-
-            }
-        }
-        return newImage;
-
-    }
-
-    public WritableImage bilinearInterpolation(WritableImage image, int newWidth, int newHeight) {
-        WritableImage newImage = new WritableImage(newWidth, newHeight);
-        PixelReader image_reader = image.getPixelReader();
-        PixelWriter image_writer = newImage.getPixelWriter();
-
-
-        float xA, yA;
-        if (front != 0 || side != 0) {
-            xA = (float) image.getWidth();
-            yA = (float) image.getHeight() / 2;
-        } else {
-            xA = (float) image.getWidth();
-            yA = (float) image.getHeight();
-        }
-        float xB = (float) newImage.getWidth();
-        float yB = (float) newImage.getHeight();
-
-        float y, x;
-        float ratioX = xB / xA, ratioY = yB / yA;
-        float col;
-
-        for (int j = 0; j < yB-1; j++) {
-            for (int i = 0; i < xB-1; i++) {
-                y = j * ((yA) / yB);//y on original image
-                x = i * (xA / xB); //x on original image
-
-                //System.out.println(x);
-                float pointA = (float) image_reader.getColor((int)x, (int)y).getRed();
-                float pointB = (float) image_reader.getColor((int) x + 1, (int) y).getRed();
-                float pointC = (float) image_reader.getColor((int) x, (int) y + 1).getRed();
-                float pointD = (float) image_reader.getColor((int) x + 1, (int) y + 1).getRed();
 
 
 
 
 
-                float nearX = (i / ratioX);
-                float nearY = (j / ratioY);
-                float differenceX = ((nearX * ratioX) - i);
-                float differenceY = ((nearY * ratioY) - j);
 
-
-                col = (
-                        pointA * (1 - differenceX) * (1 - differenceY) + pointB * (differenceX) * (1 - differenceY) +
-                                pointC * (differenceY) * (1 - differenceX) + pointD * (differenceX * differenceY));
-                //System.out.println(col);
-                if (col < 0) {
-                    col = 0;
-                } else if (col > 1) {
-                    col = 1;
-                }
-                //System.out.println(col);
-                for (int c = 0; c < 3; c++) {
-                    image_writer.setColor(i, j, Color.color(col, col, col, 1.0));
-                }
-
-            }
-        }
-
-
-        return newImage;
-    }
-
-    public WritableImage biCubicInterpolation(WritableImage image, int newWidth, int newHeight) {
-        WritableImage newImage = new WritableImage(newWidth, newHeight);
-        PixelReader image_reader = image.getPixelReader();
-        PixelWriter image_writer = newImage.getPixelWriter();
-
-
-        float xA, yA;
-        if (front != 0 || side != 0) {
-            xA = (float) image.getWidth();
-            yA = (float) image.getHeight() / 2;
-        } else {
-            xA = (float) image.getWidth();
-            yA = (float) image.getHeight();
-        }
-        float xB = (float) newImage.getWidth();
-        float yB = (float) newImage.getHeight();
-
-        float y, x;
-        float ratioX = xB / xA, ratioY = yB / yA;
-        float col;
-
-        for (int j = 0; j < yB-1; j++) {
-            for (int i = 0; i < xB-1; i++) {
-                y = j * ((yA) / yB);//y on original image
-                x = i * (xA / xB); //x on original image
-
-                //System.out.println(x);
-                float pointA = (float) image_reader.getColor((int)x, (int)y).getRed();
-                float pointB = (float) image_reader.getColor((int) x + 1, (int) y).getRed();
-                float pointC = (float) image_reader.getColor((int) x, (int) y + 1).getRed();
-                float pointD = (float) image_reader.getColor((int) x + 1, (int) y + 1).getRed();
-                float pointE, pointF, pointG, pointH;
-
-
-
-
-                float nearX = (i / ratioX);
-                float nearY = (j / ratioY);
-                float differenceX = ((nearX * ratioX) - i);
-                float differenceY = ((nearY * ratioY) - j);
-
-
-                col = (
-                        pointA * (1 - differenceX) * (1 - differenceY) + pointB * (differenceX) * (1 - differenceY) +
-                                pointC * (differenceY) * (1 - differenceX) + pointD * (differenceX * differenceY));
-                //System.out.println(col);
-                if (col < 0) {
-                    col = 0;
-                } else if (col > 1) {
-                    col = 1;
-                }
-                //System.out.println(col);
-                for (int c = 0; c < 3; c++) {
-                    image_writer.setColor(i, j, Color.color(col, col, col, 1.0));
-                }
-
-            }
-        }
-
-
-        return newImage;
-    }
 
 
 }
