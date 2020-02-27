@@ -1,2 +1,2 @@
 # CS255
-NO DataSet included in the format due to redistribution rights.
+NO CT-Scan data-set included in the format due to redistribution rights.
