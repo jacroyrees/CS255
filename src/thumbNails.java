@@ -8,8 +8,7 @@ import java.awt.*;
 
 public class thumbNails extends Example{
 
-    public static WritableImage[] viewThumbnails() {
-
+    public static WritableImage[] viewThumbnails(){
         dim = false;
         int thumbWidth = 90, thumbHeight = 90;
         side = 0;
@@ -45,8 +44,7 @@ public class thumbNails extends Example{
 
 
         return thumbNail;
+        }
+
+
     }
-
-
-
-}

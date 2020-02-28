@@ -6,7 +6,7 @@ import static java.lang.Integer.max;
 
 public class MIP extends Example {
     public static  WritableImage MIPSide() {
-        WritableImage image = medical_image;
+        WritableImage image = new WritableImage((int)medical_image.getWidth(), (int)medical_image.getHeight());
         dim = true;
         PixelWriter image_writer = image.getPixelWriter();
         int i, j, k, c;
@@ -35,7 +35,7 @@ public class MIP extends Example {
     }
 
     public static WritableImage MIPTop() {
-        WritableImage image = medical_image;
+        WritableImage image = new WritableImage((int)medical_image.getWidth(), (int)medical_image.getHeight());
         dim = false;
         PixelWriter image_writer = image.getPixelWriter();
         int i, j, k, c;
@@ -65,7 +65,7 @@ public class MIP extends Example {
     }
 
     public static WritableImage MIPFront() {
-        WritableImage image = medical_image;
+        WritableImage image = new WritableImage((int)medical_image.getWidth(), (int)medical_image.getHeight());
         dim = true;
         PixelWriter image_writer = image.getPixelWriter();
         int i, j, k, c;

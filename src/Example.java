@@ -73,6 +73,7 @@ public class Example extends Application {
 
 
         GridPane thumbnailLarge = new GridPane();
+        Button invertBtn = new Button("Invert Image");
         Button backBtn = new Button("Back to ThumbNails");
         Button backBtn2 = new Button("Back to Main");
         thumbnailLarge.add(backBtn,2,2,1,1);
@@ -92,7 +93,7 @@ public class Example extends Application {
 
 
         root2.setOnMouseClicked(e ->{
-
+            versionControl = true;
             //System.out.println(e.getX());
             int cX = (int)Math.floor(e.getX() / 90);
             int cY = (int)Math.floor(e.getY() / 90);
@@ -100,41 +101,48 @@ public class Example extends Application {
             System.out.println(cX);
 
             int cZ = ((cY *16) + cX);
-            //System.out.println(cZ);
 
-            if(e.getY() < root2.getHeight()){
-                if(e.getY() > root2.getHeight() - 90 && e.getX() < 360) {
+
+
+
                     if (cZ < 256) {
                         side = cZ;
-                        ImageView image = new ImageView(imageResize.bilinearInterpolation(Axis.sideAxis(), 500, 500));
-                        thumbnailLarge.add(image, 2, 0, 2, 1);
+                        ImageView image1 = new ImageView(imageResize.bilinearInterpolation(Axis.sideAxis(), 500, 500));
+                        thumbnailLarge.add(image1, 2, 0, 2, 1);
+                        thumbNailStage.setScene(scene3);
                     } else if (cZ < 512) {
                         front = cZ - 256;
-                        ImageView image = new ImageView(imageResize.bilinearInterpolation(Axis.frontAxis(), 500, 500));
-                        thumbnailLarge.add(image, 2, 0, 2, 1);
+                        ImageView image1 = new ImageView(imageResize.bilinearInterpolation(Axis.frontAxis(), 500, 500));
+                        thumbnailLarge.add(image1, 2, 0, 2, 1);
+                        thumbNailStage.setScene(scene3);
                     } else if (cZ < 624) {
                         top = cZ - 512;
-                        ImageView image = new ImageView(imageResize.bilinearInterpolation(Axis.frontAxis(), 500, 500));
-                        thumbnailLarge.add(image, 2, 0, 2, 1);
+                        ImageView image1 = new ImageView(imageResize.bilinearInterpolation(Axis.topAxis(), 500, 500));
+                        thumbnailLarge.add(image1, 2, 0, 2, 1);
+                        thumbNailStage.setScene(scene3);
                     } else if (cZ == 625) {
                         ImageView image1 = new ImageView(imageResize.bilinearInterpolation(mip.MIPSide(), 500, 500));
 
                         thumbnailLarge.add(image1, 2, 0, 2, 1);
-
+                        thumbNailStage.setScene(scene3);
                     } else if (cZ == 626) {
-                        ImageView image = new ImageView(imageResize.bilinearInterpolation(mip.MIPFront(), 500, 500));
-                        thumbnailLarge.add(image, 2, 0, 2, 1);
-                    } else {
-                        ImageView image = new ImageView(imageResize.bilinearInterpolation(mip.MIPTop(), 500, 500));
-                        thumbnailLarge.add(image, 2, 0, 2, 1);
-                    }
-                    thumbNailStage.setScene(scene3);
+                        ImageView image1 = new ImageView(imageResize.bilinearInterpolation(mip.MIPFront(), 500, 500));
+                        thumbnailLarge.add(image1, 2, 0, 2, 1);
+                        thumbNailStage.setScene(scene3);
+                    } else if(cZ == 627){
+                        ImageView image1 = new ImageView(imageResize.bilinearInterpolation(mip.MIPTop(), 500, 500));
+                        thumbnailLarge.add(image1, 2, 0, 2, 1);
+                        thumbNailStage.setScene(scene3);
+                    }else{
 
-                }
+                    }
+
+
+
 
                 //System.out.println(cY);
 
-            }
+
         });
 
 
@@ -244,6 +252,13 @@ public class Example extends Application {
             }
         });
 
+        invertBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                displayImg.setImage(invertImage.invertImage());
+            }
+        });
+
         mipTopbutton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -341,7 +356,7 @@ public class Example extends Application {
 
 
 //https://examples.javacodegeeks.com/desktop-java/javafx/scene/image-scene/javafx-image-example/
-
+        root.add(invertBtn,6,3,1,1);
         root.add(viewThumbNails,2,7,1,1);
         root.add(comboBox,2,5,1,1);
         root.add(widthLbl, 0, 5, 1, 1);

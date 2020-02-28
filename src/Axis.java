@@ -6,7 +6,7 @@ public class Axis extends Example{
 
     public static WritableImage topAxis() {
         dim = false;
-        WritableImage image = medical_image;
+        WritableImage image = new WritableImage((int)medical_image.getWidth(), (int)medical_image.getHeight());
         //Get image dimensions, and declare loop variables
         int w = (int) image.getWidth(), h = (int) image.getHeight(), i, j, c, k;
         PixelWriter image_writer = image.getPixelWriter();
@@ -35,15 +35,21 @@ public class Axis extends Example{
                 } // colour loop
             } // column loop
         } // row loop
+        if(!versionControl){
+            medical_image = image;
+        }
         return image;
+
     }
+
+
 
 
     public static WritableImage frontAxis() {
         dim = true;
-        WritableImage image = medical_image;
+        WritableImage image = new WritableImage((int)medical_image.getWidth(), (int)medical_image.getHeight());
         //Get image dimensions, and declare loop variables
-        int dimension = (int) cthead.length, h = (int) image.getHeight(), i, j, c, k;
+        int dimension =  cthead.length, h = (int) image.getHeight(), i, j, c, k;
         PixelWriter image_writer = image.getPixelWriter();
 
         float col;
@@ -70,6 +76,9 @@ public class Axis extends Example{
                 } // colour loop
             } // column loop
         } // row loop
+        if(!versionControl){
+            medical_image = image;
+        }
         return image;
     }
 
@@ -78,9 +87,9 @@ public class Axis extends Example{
 
     public static WritableImage sideAxis() {
         dim = true;
-        WritableImage image = medical_image;
+        WritableImage image = new WritableImage((int)medical_image.getWidth(), (int)medical_image.getHeight());
         //Get image dimensions, and declare loop variables
-        int dimension = (int) cthead.length, h = (int) image.getHeight(), i, j, c, k;
+        int dimension = cthead.length, h = (int) image.getHeight(), i, j, c, k;
         PixelWriter image_writer = image.getPixelWriter();
 
         float col;
@@ -107,6 +116,9 @@ public class Axis extends Example{
                 } // colour loop
             } // column loop
         } // row loop
+        if(!versionControl){
+            medical_image = image;
+        }
         return image;
 
 
